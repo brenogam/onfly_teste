@@ -12,6 +12,14 @@ class TakeoutOrderTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        // Informo que iremos rodar as seeds de banco de dados antes de cada teste.
+        $this->artisan('db:seed');
+    }
+
     /** @test */
     public function it_creates_order_with_valid_data()
     {
@@ -23,7 +31,7 @@ class TakeoutOrderTest extends TestCase
         ];
         User::create([
             'name'=>'Breno',
-            'email'=> 'teste@email.com',
+            'email'=> 'teste1@email.com',
             'password' => 'senha123',
         ]);
 
@@ -39,6 +47,90 @@ class TakeoutOrderTest extends TestCase
         $response->assertStatus(201);  // Verifica se foi criado com sucesso
         $response->assertJson($data);  // Verifica se os dados foram retornados corretamente
         $this->assertDatabaseHas('takeout_orders', $data);  // Verifica se o pedido foi salvo no banco
+    }
+
+        /** @test */
+    public function it_update_order_with_valid_data()
+    {
+        $data = [
+            'status' => 'aprovado',
+        ];
+        User::create([
+            'name'=>'Breno',
+            'email'=> 'teste1@email.com',
+            'password' => 'senha123',
+        ]);
+
+        $credentials = [
+            'email' => 'teste@email.com',
+            'password' => 'senha123',
+        ];
+        $token = JWTAuth::attempt($credentials); 
+
+        $order = TakeoutOrder::create([
+            'nome_solicitante' => 'John Doe',
+            'destino' => 'Paris',
+            'data_ida' => '2024-12-01',
+            'data_volta' => '2024-12-15',
+        ]);
+
+        $response = $this->putJson("/api/updateOrder/$order->id/status", $data, [
+            'Authorization' => 'Bearer ' . $token,  // Incluindo o token no cabeçalho
+        ]);
+        
+        $response->assertStatus(200);  // Verifica se foi criado com sucesso
+        $response->assertJson([
+            'nome_solicitante' => 'John Doe',
+            'destino' => 'Paris',
+            'data_ida' => '2024-12-01',
+            'data_volta' => '2024-12-15',
+            'status' => 'aprovado',
+        ]);  // Verifica se os dados foram retornados corretamente
+        $this->assertDatabaseHas('takeout_orders', [            
+            'nome_solicitante' => 'John Doe',
+            'destino' => 'Paris',
+            'data_ida' => '2024-12-01',
+            'data_volta' => '2024-12-15',
+            'status' => 'aprovado',
+        ]);  // Verifica se o pedido foi salvo no banco
+    }
+
+            /** @test */
+    public function it_index_order()
+    {
+
+        User::create([
+            'name'=>'Breno',
+            'email'=> 'teste1@email.com',
+            'password' => 'senha123',
+        ]);
+
+        $credentials = [
+            'email' => 'teste@email.com',
+            'password' => 'senha123',
+        ];
+        $token = JWTAuth::attempt($credentials); 
+
+        $order = TakeoutOrder::create([
+            'nome_solicitante' => 'John Doe',
+            'destino' => 'Paris',
+            'data_ida' => '2024-12-01',
+            'data_volta' => '2024-12-15',
+        ]);
+
+        $response = $this->getJson("/api/consultOrder/$order->id", [
+            'Authorization' => 'Bearer ' . $token,  // Incluindo o token no cabeçalho
+        ]);
+      
+        $response->assertStatus(200);  // Verifica se foi criado com sucesso
+        $response->assertJson([
+            'nome_solicitante' => 'John Doe',
+            'destino' => 'Paris',
+            'data_ida' => '2024-12-01',
+            'data_volta' => '2024-12-15',
+            'status' => 'solicitado',
+        ]);  // Verifica se os dados foram retornados corretamente
+
     }
 
     /** @test */
